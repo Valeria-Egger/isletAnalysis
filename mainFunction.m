@@ -5,12 +5,6 @@
 % Data
 
 dataset = readtable("scaled/Scaled_Results_ablated_islet3.csv");
-%y = dataset{:, 10};
-%y = [1 1 1.1 1 0.9 1 1 1.1 1 0.9 1 1.1 1 1 0.9 1 1 1.1 1 1,...
- %   1 1 1.1 0.9 1 1.1 1 1 0.9 1 1.1 1 1 1.1 1 0.8 0.9 1 1.2 0.9 1,...
-  %  1 1.1 1.2 1 1.5 1 3 2 5 3 2 1 1 1 0.9 1,...
-   % 1 3 2.6 4 3 3.2 2 1 1 0.8 4 4 2 2.5 1 1 1];
-
 
 numCols = width(dataset);
 allSignals = cell(1, numCols);
@@ -21,11 +15,6 @@ lag = 100;
 threshold = 2;
 influence = 0.01;
 Minimum_signal = 0.2;
-
-
-
-
-
 
  %Calculate the number of peaks detected for the current signal
  %I will later rewrite this one with a rising edge detector as I will do
@@ -95,8 +84,6 @@ end
 %    title(['Peak Prominence for Cell ' num2str(i)]); 
 %end
 
-
-
 time = length(signals);
 %adjust these as you needed if you have different conditions
 for i = 2:numCols
@@ -119,7 +106,6 @@ disp(AllCounts);
 %right now just one dataset because I am tired
 totalPeaks = sum(PeakCounts);
 fprintf('Total number of peaks detected across all columns: %d\n', totalPeaks);
-
 
 for i = 2:numCols
 fprintf('Number of peaks detected in column %d: %d\n', i, PeakCounts(i));
@@ -145,32 +131,12 @@ total_per_window = sum(Matrix_count, 1);
 %    title(['Wavelet Transform for Cell ' num2str(i)]);
 %end
 
-
 %try wavelet and autocorrelation here
 W{i} = ComputeWavelet(y);
 PlotWavelet(W{i}, 5);
 ComputeAutocorr(y);
 
-%%
-%what to do?
-%TIDY THIS UP
-%and then adjust minimal signal
-%and find out what to do with the peak prominence
-%and make it usable for other FUCKERS
-%and check length, height, prominence logic
-%and check all the logic
-%like really check this
-%DO NOT FORGET TO CHECK THIS
-%and then TIDY UP AGAIN
-%FUCKER
 
-%and also you have to check the histogram because something weird goes on
-%actually nothing weird goes on...that is right
-%but I eventually have to somehow figure out what I want to plot when
-%and actually save and export it...that would be nice too
-%and pls check the peak detection logic again!!!
-%and also also you have to make an Interface
-%%
 
 
 %iterate over all the cells then calculate number of peaks per cell, number
@@ -218,5 +184,6 @@ title('total peaks per time window');
 figure;
 histogram(PeakCounts);
 title('peaks per cell');
+
 
 
