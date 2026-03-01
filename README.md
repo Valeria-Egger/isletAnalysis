@@ -30,7 +30,7 @@ If there are any questions please feel free to reach out.
 
 
 ## Future plans
-- following functions may be included in later versions:
+-following functions may be included in later versions:
     -AUC calculations, time to peak
     -cross-correlation/synchronicity computations
     -...
