@@ -1,3 +1,7 @@
+% Source - https://stackoverflow.com/a/54507329
+% Posted by Jean-Paul, modified by community. See post 'Timeline' for change history
+% Retrieved 2026-02-12, License - CC BY-SA 4.0
+
 function [signals, averageFilter, stdFilter] = DetectPeaks(y, lag, threshold, influence, Minimum_signal)
 
 signals = zeros(length(y), 1);
@@ -26,3 +30,4 @@ for i=lag+2:length(y)
     stdFilter(i, 1) = std(filteredY(i-lag:i));
 end
 end
+
