@@ -79,7 +79,7 @@ figure;
     title(['Autocorrelation (positive lags) for Cell', num2str(exampleCell)])
 
 
-raw = dataset{:, 7};
+raw = dataset{:, exampleCell};
 [signals1,avg1,dev1] = DetectPeaks(raw,lag,threshold,influence, Minimum_signal);
 
 figure; subplot(2,1,1); hold on;
@@ -148,6 +148,7 @@ title("Distribution of Peak Prominence")
 %    ylabel('Prominence'); 
 %    title(['Peak Prominence for Cell ' num2str(i)]); 
 %end
+
 
 
 
