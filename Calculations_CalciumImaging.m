@@ -1,10 +1,7 @@
 function Calculations_CalciumImaging
-
-%calculations about AUC
-%calculations about peak detection and everything that goes in that
-%autocorrelation
-%cross-correlation of the autocorrelation
-dataset = readtable("Results_control_islet4.csv");
+[file, path] = uigetfile("*.csv", "Select a csv file");
+dataset = readtable(fullfile(path, file));
+[~, baseName, ~] = fileparts(file);
 
 T = dataset;
 columns = startsWith(T.Properties.VariableNames, "Mean");
@@ -20,7 +17,6 @@ T{:, columns} = scaled;
 longT = stack(T, T.Properties.VariableNames(columns), ... 
     'NewDataVariableName', 'value', ... 
     'IndexVariableName', 'trace');
-%keyboard
 unique(longT.trace)
 
 figure
@@ -42,4 +38,5 @@ if ~exist("scaled", "dir")
 end
 
 output = T(:, ['Var1', T.Properties.VariableNames(columns)]);
-writetable(output, fullfile("scaled", "Scaled_Results_control_islet3_third.csv"))
+outputName = baseName + "_scaled.csv";
+writetable(output, fullfile("scaled", outputName))
