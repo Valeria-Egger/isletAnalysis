@@ -23,6 +23,13 @@ Matlab R2025b is needed to run this code. Other versions have not been tested.
 
 ## Limitations
 For now baseline drift is not handled, this will be adressed in the future. However keep in mind that noisy cells or cells with high baseline drift may produce inconsistent results. To adress this visual inspection, parameter tweaking or the Minimum_signal parameter might be helpful. Otherwise consider excluding the cell of the analysis. 
+### wavelet function
+The frequency limits of the Morlet wavelet transform is determined by the number of timepoints in the dataset and the sampling rate. For the example dataset this would be N (number of timepoints) = 1080 and fs (sampling rate) = 1 (for 1 second between images). 
+This leads to frequency limits of 2.3 seconds and 5.5 minutes as min and max respectively. 
+To find out your specific frequency limits for your dataset run following command in the command line:
+"[minfreq, maxfreq] = cwtfreqbounds(N, fs)"
+To convert it to oscillation period simple divide 1 with your limits.
+For example in case of the example data (N = 1080 and fs = 1) the command gives minfreq = 0.0031, the maxfreq = 0.4341. This is then converted to: 1/0.0031 = 322.6 seconds and 1/0.4341 = 2.3 seconds. Therefore the wavelet transform for this dataset can reasonable detect oscillations with a period between 2.3 seconds and 5.4 minutes. This was determined reasonable for islet physiology. Please confirm beforehand that your sampling parameters will produce reasonable limits for your application. 
 
 ## Contact
 This is just the minimal version of the analysis pipeline. So far it runs and provides the expected output however output is for now only variables and plots and will later be adjusted to csv files that can be exported into R. 
