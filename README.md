@@ -30,6 +30,9 @@ To find out your specific frequency limits for your dataset run following comman
 "[minfreq, maxfreq] = cwtfreqbounds(N, fs)"
 To convert it to oscillation period simple divide 1 with your limits.
 For example in case of the example data (N = 1080 and fs = 1) the command gives minfreq = 0.0031, the maxfreq = 0.4341. This is then converted to: 1/0.0031 = 322.6 seconds and 1/0.4341 = 2.3 seconds. Therefore the wavelet transform for this dataset can reasonable detect oscillations with a period between 2.3 seconds and 5.4 minutes. This was determined reasonable for islet physiology. Please confirm beforehand that your sampling parameters will produce reasonable limits for your application. 
+### count Peaks per window
+This function will undergo change to allow the user to choose their own time windows rather than relying on the hardcoded provided for this. Right now the hardcoded version supports 1080 timesteps with change (perfusion) every 180 seconds (timepoints). If this is suitable for you at this moment you can simply outcomment the sections to calculate peaks per window and plot it in Matlab. You are also welcome to change this version as needed. 
+
 
 ## Contact
 This is just the minimal version of the analysis pipeline. So far it runs and provides the expected output however output is for now only variables and plots and will later be adjusted to csv files that can be exported into R. 
