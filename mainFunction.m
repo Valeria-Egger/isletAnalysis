@@ -3,12 +3,12 @@
 [file, path] = uigetfile("*.csv", "Select a csv file");
 dataset = readtable(fullfile(path, file));
 
+numCols = width(dataset);
 AllPeakStarts = cell(numCols, 1);
 AllPeakProminence = cell(numCols, 1);
 AllPeakHeights = cell(numCols, 1);
 AllPeakWidths = cell(numCols, 1);
 
-numCols = width(dataset);
 allSignals = cell(1, numCols);
 AllCounts = cell(1, numCols);
 PeakCounts = zeros(1, numCols);
@@ -148,6 +148,7 @@ title("Distribution of Peak Prominence")
 %    ylabel('Prominence'); 
 %    title(['Peak Prominence for Cell ' num2str(i)]); 
 %end
+
 
 
 
