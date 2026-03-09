@@ -55,6 +55,26 @@ end
 
 %disp(AllCounts);
 
+%AUC
+% Calculate the Area Under the Curve (AUC) for each signal
+%AllAUCs = cell(numCols-1, 1);
+%for j = 2:numCols
+%    winSize = 180;
+%    yj = dataset{:, j};
+%    N = floor(length(yj)/winSize)*winSize;
+%    sigTrim = yj(1:N);
+
+%    yWindow = reshape(sigTrim, winSize, []);
+%    numWindows = size(yWindow, 2)
+%    AUC = zeros(numWindows, 1);
+
+%    for i = 1:numWindows
+%        AUC(i) = trapz(yWindow(:, i));
+%    end
+%    AllAUCs{j-1} = AUC';
+%end
+
+
 %Calculate the number of peaks per islet (so for the whole dataset)
 %right now just one dataset because I am tired
 
@@ -135,6 +155,46 @@ xlabel("Peak Prominence");
 ylabel("Count");
 title("Distribution of Peak Prominence")
 
+%save the data
+excelFile = name + "AnalysisResults.xlsx";
+CellIDs = "Cell" + (1:numCols)';
+PeakCounts_table = table(CellIDs, PeakCounts(:), ...
+    'VariableNames', {'CellsIDs', 'PeakCount'});
+writetable(PeakCounts_table, excelFile, 'Sheet', 'PeakCount');
+
+rows = [];
+
+
+for i = 1:numCols
+    heights = AllPeakHeights{i};
+    widths = AllPeakWidths{i};
+    prominence = AllPeakProminence{i};
+
+    numPeaks = length(heights);
+    CellID = repmat(i, numPeaks, 1);
+    PeakIndex = (1:numPeaks)';
+    rows = [rows; table(CellID, PeakIndex, heights(:), widths(:), prominence(:),...
+        'VariableNames', {'CellID', 'CellIndex', 'CellHeight', 'CellWidth', 'CellProminence'})];
+end
+writetable(rows, excelFile, 'Sheet', 'PeakDetails');
+
+%numCells = size(AUC_Matrix_count, 1);
+%CellIDs = "Cell" + (1:numCells)';
+
+%AUC_table = array2table(AUC_Matrix_count, ...
+%    'RowNames', CellIDs);
+
+%writetable(AUC_table, excelFile, 'Sheet', 'AUC_per_window', 'WriteRowNames', true);
+
+
+%numCells = size(Peak_Matrix_count, 1);
+%CellIDs = "Cell" + (1:numCells)';
+
+%Peak_table = array2table(Peak_Matrix_count, ...
+%    'RowNames', CellIDs);
+
+%writetable(Peak_table, excelFile, 'Sheet', 'Peak_per_window', 'WriteRowNames', true);
+
 
 %figure
 %for i = 1:numCols 
@@ -148,6 +208,7 @@ title("Distribution of Peak Prominence")
 %    ylabel('Prominence'); 
 %    title(['Peak Prominence for Cell ' num2str(i)]); 
 %end
+
 
 
 
