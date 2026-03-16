@@ -1,17 +1,27 @@
 % Load min-max scaled Data
 
 [file, path] = uigetfile("*.csv", "Select a csv file");
+[~, name, ~] = fileparts(file);
 dataset = readtable(fullfile(path, file));
 
+%Preallocation
 numCols = width(dataset);
 AllPeakStarts = cell(numCols, 1);
 AllPeakProminence = cell(numCols, 1);
 AllPeakHeights = cell(numCols, 1);
 AllPeakWidths = cell(numCols, 1);
-
+AllPeakEven = cell(numCols, 1);
+AllPeakSharpSure = cell(numCols, 1);
+AllInflectionsRise = cell(numCols, 1);
+AllInflectionsDecay = cell(numCols, 1);
+SymmetryMatrix = cell(numCols, 1);
+AllAUCs = cell(numCols, 1);
 allSignals = cell(1, numCols);
 AllCounts = cell(1, numCols);
 PeakCounts = zeros(1, numCols);
+AllInflectionPointRise = cell(1, numCols);
+AllInflectionPointDecay = cell(1, numCols);
+AllPeakIndex = cell(1, numCols);
 
 % Settings
 lag = 100;
@@ -35,15 +45,26 @@ for i = 1:numCols
 end
 
 %Peak feature extraction
-for i = 1:numCols
+for i = 2:numCols
     rawSignal = dataset{:, i};
     [signals, avg, dev] = DetectPeaks(rawSignal, lag, threshold, influence, Minimum_signal);
-    [PeakStarts, PeakEnds, PeakHeights, PeakWidths, peakProminence] = extractPeaks(rawSignal, signals);
+    peaks = extractPeaks(rawSignal, signals);
 
-    AllPeakStarts{i} = PeakStarts; 
-    AllPeakProminence{i} = peakProminence(:);
-    AllPeakWidths{i} = PeakWidths(:);
-    AllPeakHeights{i} = PeakHeights(:); 
+    AllPeakStarts{i} = peaks.Start; 
+    AllPeakProminence{i} = peaks.Prominence;
+    AllPeakWidths{i} = peaks.Widths;
+    AllPeakHeights{i} = peaks.Heights; 
+    AllPeakEven{i} = peaks.even;
+    AllPeakSharpSure{i} = peaks.Sharp;
+    AllInflectionsRise{i} = peaks.riseInflectionIndex;
+    AllInflectionsDecay{i} = peaks.decayInflectionIndex;
+    SymmetryMatrix{i} = AllInflectionsRise{i} - AllInflectionsDecay{i};
+    AUC = AUCPerWindow(rawSignal, 180);
+    AllAUCs{i} = AUC';
+
+    AllInflectionPointRise{i} = peaks.riseInflectionPoint;
+    AllInflectionPointDecay{i} = peaks.decayInflectionPoint;
+    AllPeakIndex{i} = peaks.PeakIndex;
 end
 
 %define time windows (this may have to be adjusted for your time windows)
@@ -54,27 +75,6 @@ end
 %end
 
 %disp(AllCounts);
-
-%AUC
-% Calculate the Area Under the Curve (AUC) for each signal
-%AllAUCs = cell(numCols-1, 1);
-%for j = 2:numCols
-%    winSize = 180;
-%    yj = dataset{:, j};
-%    N = floor(length(yj)/winSize)*winSize;
-%    sigTrim = yj(1:N);
-
-%    yWindow = reshape(sigTrim, winSize, []);
-%    numWindows = size(yWindow, 2)
-%    AUC = zeros(numWindows, 1);
-
-%    for i = 1:numWindows
-%        AUC(i) = trapz(yWindow(:, i));
-%    end
-%    AllAUCs{j-1} = AUC';
-%end
-
-
 %Calculate the number of peaks per islet (so for the whole dataset)
 %right now just one dataset because I am tired
 
@@ -88,8 +88,39 @@ end
 %Wavelet and autocorrelation for oscillation detection
 W{exampleCell} = ComputeWavelet(allSignals{exampleCell});
 PlotWavelet(W{exampleCell}, exampleCell);
+P = cell(1, numCols);
+W = cell(1, numCols);
+
+
+%N = numel(W);
+for i = 1:numCols
+    W{i} = ComputeWavelet(allSignals{i});
+    P{i} = abs(W{i}.cfs).^2;
+end
+Pstack = cat(3, P{:});
+Pmean = mean(Pstack, 3);
+Pfreq = mean(Pmean, 2);
+numTimes = size(Pmean, 2);
+time = (0:numTimes-1) * 1;
+freqs = W{1}.freqs;
 
 %Plotting
+figure;
+imagesc(time, freqs, Pmean);
+axis xy;
+colormap("turbo");
+colorbar;
+xlabel("time");
+ylabel("Frequency");
+title("population Mean wavelet Power");
+
+figure;
+plot(freqs, Pfreq, 'LineWidth', 2);
+xlabel("Frequency");
+ylabel("Mean Power");
+title("Population Power spectrum");
+grid on;
+
 [acf, lags] = ComputeAutocorr(allSignals{exampleCell});
 pos = lags >= 0;
 figure;
@@ -114,6 +145,7 @@ plot(1:length(raw),raw,'b');
 subplot(2,1,2);
 stairs(signals1,'r','LineWidth',1.5); ylim([-1.5 1.5]);
 
+AllPeakHeights = cellfun(@(x) x(:), AllPeakHeights, 'UniformOutput', false);
 allHeights = vertcat(AllPeakHeights{:});
 edges = 0:0.2:max(allHeights);
 countsH = histcounts(allHeights, edges);
@@ -124,6 +156,7 @@ xlabel("Peak Heights");
 ylabel("Count");
 title("Distribution of Peak Heights")
 
+AllPeakWidths = cellfun(@(x) x(:), AllPeakWidths, 'UniformOutput', false);
 allWidths = vertcat(AllPeakWidths{:});
 edges = 0:10:max(allWidths);
 countsW = histcounts(allWidths, edges);
@@ -134,18 +167,25 @@ xlabel("Peak Widths");
 ylabel("Count");
 title("Distribution of Peak Widths")
 
-%nonEmpty = ~cellfun(@isempty, AllCounts);
-%Matrix_count = cell2mat(AllCounts(nonEmpty)');
-%total_per_window = sum(Matrix_count, 1);
-%figure;
-%bar(total_per_window);
-%title('total peaks per time window');
+nonEmpty = ~cellfun(@isempty, AllCounts);
+Peak_Matrix_count = cell2mat(AllCounts(nonEmpty)');
+total_per_window = sum(Peak_Matrix_count, 1);
+figure;
+bar(total_per_window);
+title('total peaks per time window');
+
+nonEmpty = ~cellfun(@isempty, AllAUCs);
+AUC_Matrix_count = cell2mat(AllAUCs(nonEmpty));
+total_AUC_per_window = sum(AUC_Matrix_count, 1);
+figure;
+bar(total_AUC_per_window);
+title('total AUC per time window');
 
 figure;
-histogram(PeakCounts);
+bar(PeakCounts);
 title('peaks per cell');
 
-
+AllPeakProminence = cellfun(@(x) x(:), AllPeakProminence, 'UniformOutput', false);
 allProminence = vertcat(AllPeakProminence{:});
 edges = 0:0.2:max(allProminence);
 countsP = histcounts(allProminence, edges);
@@ -154,6 +194,94 @@ bar(edges(1:end-1), countsP, 'histc');
 xlabel("Peak Prominence");
 ylabel("Count");
 title("Distribution of Peak Prominence")
+
+counts = zeros(numCols, 2);
+for i = 1:numCols
+    vector = AllPeakEven{i};
+    counts(i, 1) = sum(vector);
+    counts(i, 2) = sum(~vector);
+end
+
+figure;
+bar(counts);
+set(gca, 'XTick', 2:numCols);
+legend({'Symmetric', 'Asymmetric'});
+ylabel('Number of Peaks');
+title("Symmetry over the dataset")
+
+countsSharp = zeros(numCols, 2);
+vector2 = zeros(numCols, 2);
+
+
+
+for i = 1:numCols
+    vector2 = AllPeakSharpSure{i};
+    countsSharp(i, 1) = sum(vector2);
+    countsSharp(i, 2) = sum(~vector2);
+end
+
+figure;
+bar(countsSharp, "stacked");
+set(gca, 'XTick', 1:numCols);
+legend({'Sharp', 'The opposite of Sharp'});
+ylabel('Number of Peaks');
+title("Sharpness over the dataset")
+
+
+
+maxLen = max(cellfun(@length, SymmetryMatrix));
+SymPad = nan(numCols, maxLen);
+
+for i = 1:numCols
+    L = length(SymmetryMatrix{i});
+    SymPad(i,1:L) = SymmetryMatrix{i};
+end
+
+figure;
+boxplot(SymPad', 'Labels', 1:numCols);
+xlabel('Cell #');
+ylabel('Symmetry Score');
+title('Symmetry Distribution per Cell');
+
+%symmetry score >0 longer rise than decay, peak leans right
+%symmetry score <0 longer decay, peak leans left
+%symmetry score = 0 rise and decay equal
+%we are back with unnecessary documentation somewhere
+
+RiseInflectionPointEx = AllInflectionPointRise{exampleCell};
+DecayInflectionPointEx = AllInflectionPointDecay{exampleCell};
+
+
+figure;
+hold on;
+plot(raw, 'k', 'LineWidth', 1.2);
+scatter(AllPeakIndex{exampleCell}, raw(AllPeakIndex{exampleCell}), 60, 'r', 'filled', ...
+    'DisplayName', 'PeakMaxima');
+validRise = ~isnan(RiseInflectionPointEx);
+validDecay = ~isnan(DecayInflectionPointEx);
+scatter(RiseInflectionPointEx(validRise), raw(RiseInflectionPointEx(validRise)),...
+    50, 'b', 'filled', 'DisplayName', 'RiseInflection');
+scatter(DecayInflectionPointEx(validDecay), raw(DecayInflectionPointEx(validDecay)),...
+    50, 'green', 'filled', 'DisplayName', 'DecayInflection');
+legend show;
+title('Peak Detection and Inflection Points');
+xlabel('Sample Index');
+ylabel('Signal Amplitude');
+hold off;
+
+
+%not a great fan of that plot to be honest but however
+RiseInflectionIndexEx = AllInflectionsRise{exampleCell};
+DecayInflectionIndexEx = AllInflectionsDecay{exampleCell};
+figure; hold on;
+scatter(RiseInflectionIndexEx, DecayInflectionIndexEx, 60, 'filled');
+plot([0 max(RiseInflectionIndexEx)], [0 max(DecayInflectionIndexEx)], 'k--'); % symmetry line
+xlabel('Rise-side distance');
+ylabel('Decay-side distance');
+title('Symmetry Scatter Plot');
+axis equal;
+grid on;
+hold off;
 
 %save the data
 excelFile = name + "AnalysisResults.xlsx";
