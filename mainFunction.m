@@ -22,6 +22,9 @@ PeakCounts = zeros(1, numCols);
 AllInflectionPointRise = cell(1, numCols);
 AllInflectionPointDecay = cell(1, numCols);
 AllPeakIndex = cell(1, numCols);
+AllRawSignal = cell(1, numCols);
+CoherenceMatrix = zeros(numCols, numCols);
+LeadershipScore = zeros(numCols, numCols);
 
 % Settings
 lag = 100;
@@ -47,6 +50,8 @@ end
 %Peak feature extraction
 for i = 2:numCols
     rawSignal = dataset{:, i};
+    rawSignal = rawSignal(:);
+    AllRawSignal{i} = rawSignal;
     [signals, avg, dev] = DetectPeaks(rawSignal, lag, threshold, influence, Minimum_signal);
     peaks = extractPeaks(rawSignal, signals);
 
@@ -85,16 +90,17 @@ for i = 2:numCols
 fprintf('Number of peaks detected in column %d: %d\n', i, PeakCounts(i));
 end
 
-%Wavelet and autocorrelation for oscillation detection
-W{exampleCell} = ComputeWavelet(allSignals{exampleCell});
-PlotWavelet(W{exampleCell}, exampleCell);
+Wavelet{exampleCell} = ComputeWavelet(AllRawSignal{exampleCell});
+PlotWavelet(Wavelet{exampleCell}, exampleCell);
+
 P = cell(1, numCols);
 W = cell(1, numCols);
 
 
+
 %N = numel(W);
-for i = 1:numCols
-    W{i} = ComputeWavelet(allSignals{i});
+for i = 2:numCols
+    W{i} = ComputeWavelet(AllRawSignal{i});
     P{i} = abs(W{i}.cfs).^2;
 end
 Pstack = cat(3, P{:});
@@ -102,9 +108,53 @@ Pmean = mean(Pstack, 3);
 Pfreq = mean(Pmean, 2);
 numTimes = size(Pmean, 2);
 time = (0:numTimes-1) * 1;
-freqs = W{1}.freqs;
+freqs = W{2}.freqs;
+
+for i = 2:numCols
+    for j = 2:numCols
+    coh_threshold = 0.4;
+    x = AllRawSignal{i};
+    z = AllRawSignal{j};
+    [wcoh, wcs, period, coi] = wcoherence(x, z);
+    period = period(:);
+    coi = coi(:)';
+    mask = wcoh;
+    mask(coi < period) = NaN;
+    meanCoh = mean(wcoh(:), 'omitnan');
+    CoherenceMatrix(i, j) = meanCoh;
+
+    phase = angle(wcs);
+    valid = (wcoh > coh_threshold) & (coi >= period);
+    validPhase = phase(valid);
+    xLeads = sum(validPhase > 0);
+    yLeads = sum(validPhase < 0);
+    total = xLeads + yLeads;
+    if total == 0
+        score = NaN;
+    else
+        score = (xLeads-yLeads)/total;
+    end
+    LeadershipScore(i, j) = score;
+    end
+end
 
 %Plotting
+figure;
+imagesc(CoherenceMatrix(2:end, 2:end));
+colormap("turbo");
+colorbar;
+xlabel("i cell");
+ylabel("j cell");
+title("Mean wavelet coherence strength between cell i and j");
+
+figure;
+imagesc(LeadershipScore(2:end, 2:end));
+colormap("turbo");
+colorbar;
+xlabel("i cell");
+ylabel("j cell");
+title("Leadershipscore between cell i and j");
+
 figure;
 imagesc(time, freqs, Pmean);
 axis xy;
