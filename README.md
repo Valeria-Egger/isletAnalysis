@@ -1,6 +1,8 @@
 # IsletAnalysisPipeline
 ## Overview
-This project will host the currently under development pipeline for an experimental analysis of Calcium imaging of endocrine cells in the islet (in Danio Rerio). Right now this project includes logic to compute peak detection, extraction of features of detected peaks as well as peak counting on traces. Furthermore some experimental logic on oscillation detection (by computation of Autocorrelation and Morlet Wavelet transformation) is implemented. For usability a script for min-max scaling is provided to run before the detection pipeline.
+This project will host the currently under development pipeline for an experimental analysis of Calcium imaging of endocrine cells in the islet (in Danio Rerio). Right now this project includes logic to compute peak detection, extraction of features of detected peaks as well as peak counting on traces. Furthermore some experimental logic on oscillation detection (by computation of Autocorrelation and Morlet Wavelet transformation) is implemented. For usability a script for min-max scaling is provided to run before the detection pipeline. \
+**On AI usage** \
+AI was used for synthax and debugging help in order to learn the language faster because Matlab is still a new language to me. 
 
 ## Pipeline Steps
 1. Run "Calculations_CalciumImaging.m" on your data
